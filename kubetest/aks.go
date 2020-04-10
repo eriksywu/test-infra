@@ -54,9 +54,10 @@ type aksDeployer struct {
 	location         string
 	k8sVersion       string
 	customHeaders    map[string]string
+	options          *options
 }
 
-func newAksDeployer() (*aksDeployer, error) {
+func newAksDeployer(o *options) (*aksDeployer, error) {
 	if err := validateAksFlags(); err != nil {
 		return nil, err
 	}
@@ -109,6 +110,7 @@ func newAksDeployer() (*aksDeployer, error) {
 		location:         *aksLocation,
 		k8sVersion:       *aksOrchestratorRelease,
 		customHeaders:    customHeaders,
+		options:          o,
 	}
 
 	if err := a.dockerLogin(); err != nil {
@@ -236,6 +238,12 @@ func (a *aksDeployer) Up() error {
 	isVMSS := (*managedCluster.ManagedClusterProperties.AgentPoolProfiles)[0].Type == "" || (*managedCluster.ManagedClusterProperties.AgentPoolProfiles)[0].Type == availabilityProfileVMSS
 	if err := populateAzureCloudConfig(isVMSS, *a.azureCreds, a.azureEnvironment, a.resourceGroup, a.location, a.outputDir); err != nil {
 		return err
+	}
+
+	if model.ManagedClusterProperties != nil {
+		nodePoolArg := getNodePoolArg(*model.ManagedClusterProperties)
+		log.Printf("Adding --node-pool=%s to e2e test_args", nodePoolArg)
+		a.options.testArgs += fmt.Sprintf(" --node-pool=%s", getNodePoolArg(*model.ManagedClusterProperties))
 	}
 
 	return nil

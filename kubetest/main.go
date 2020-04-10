@@ -255,7 +255,7 @@ func getDeployer(o *options) (deployer, error) {
 	case "aksengine":
 		return newAKSEngine()
 	case "aks":
-		return newAksDeployer()
+		return newAksDeployer(o)
 	default:
 		return nil, fmt.Errorf("unknown deployment strategy %q", o.deployment)
 	}

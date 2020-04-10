@@ -24,6 +24,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/services/authorization/mgmt/2015-07-01/authorization"
@@ -445,7 +446,19 @@ func populateAzureCloudConfig(isVMSS bool, credentials Creds, azureEnvironment, 
 		return fmt.Errorf("error setting CLOUD_CONFIG=%s: %v", cloudConfigPath, err)
 	}
 
+	fmt.Printf("Set CLOUD_CONFIG=%s", cloudConfigPath)
 	return nil
+}
+
+func getNodePoolArg(mc containerservice.ManagedClusterProperties) string {
+	if mc.AgentPoolProfiles == nil {
+		return ""
+	}
+	pools := make([]string, len(*mc.AgentPoolProfiles), len(*mc.AgentPoolProfiles))
+	for i, c := range *mc.AgentPoolProfiles {
+		pools[i] = *c.Name
+	}
+	return strings.Join(pools, ",")
 }
 
 func stringPointer(s string) *string {
