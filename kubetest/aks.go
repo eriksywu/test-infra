@@ -308,8 +308,12 @@ func (a *aksDeployer) TestSetup() error {
 
 	if model.ManagedClusterProperties != nil {
 		nodePoolArg := getNodePoolArg(*model.ManagedClusterProperties)
-		log.Printf("Adding --node-pool=%s to e2e test_args", nodePoolArg)
-		a.options.testArgs += fmt.Sprintf(" --node-pool=%s", getNodePoolArg(*model.ManagedClusterProperties))
+		log.Printf("Setting NODE_POOL env val to %s", nodePoolArg)
+		if err := os.Setenv("NODE_POOL", nodePoolArg); err != nil {
+			return err
+		}
+		//log.Printf("Adding --node-pool=%s to e2e test_args", nodePoolArg)
+		//a.options.testArgs += fmt.Sprintf(" --node-pool=%s", getNodePoolArg(*model.ManagedClusterProperties))
 	}
 	return nil
 }
