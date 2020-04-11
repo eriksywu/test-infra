@@ -39,6 +39,7 @@ import (
 	"k8s.io/test-infra/kubetest/process"
 	"k8s.io/test-infra/kubetest/util"
 
+	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
 	"github.com/Azure/azure-storage-blob-go/azblob"
 	"github.com/Azure/go-autorest/autorest/azure"
 	uuid "github.com/satori/go.uuid"
@@ -773,11 +774,13 @@ func (c *aksEngineDeployer) createCluster() error {
 	}
 
 	log.Printf("Deploying cluster %v in resource group %v.", c.name, c.resourceGroup)
-	if _, err := c.azureClient.DeployTemplate(
+	var de resources.DeploymentExtended
+	if de, err = c.azureClient.DeployTemplate(
 		c.ctx, c.resourceGroup, c.name, &c.templateJSON, &c.parametersJSON,
 	); err != nil {
 		return fmt.Errorf("cannot deploy: %v", err)
 	}
+	fmt.Printf("Deployed cluster id=%s, name=%s", *(de.ID), *(de.Name))
 
 	if c.useManagedIdentity && c.identityName != "" {
 		log.Printf("Assigning 'Owner' role to %s in %s", c.identityName, c.resourceGroup)
@@ -1279,6 +1282,29 @@ func (c *aksEngineDeployer) TestSetup() error {
 	f.Chmod(0744)
 	if err := os.Setenv("KUBE_TEST_REPO_LIST", downloadPath); err != nil {
 		return err
+	}
+
+	v := AKSEngineAPIModel{}
+	if c.apiModelPath != "" {
+		// template already exists, read it
+		template, err := ioutil.ReadFile(path.Join(c.outputDir, "kubernetes.json"))
+		if err != nil {
+			return fmt.Errorf("error reading ApiModel template file: %v.", err)
+		}
+		err = json.Unmarshal(template, &v)
+		if err != nil {
+			return fmt.Errorf("error unmarshaling ApiModel template file: %v", err)
+		}
+	} else {
+		return fmt.Errorf("No template file specified %v", err)
+	}
+
+	if len(v.Properties.AgentPoolProfiles) > 0 {
+		// Default to VirtualMachineScaleSets if AvailabilityProfile is empty
+		isVMSS := v.Properties.AgentPoolProfiles[0].AvailabilityProfile == "" || v.Properties.AgentPoolProfiles[0].AvailabilityProfile == availabilityProfileVMSS
+		if err := populateAzureCloudConfig(isVMSS, *c.credentials, c.azureEnvironment, c.resourceGroup, c.location, c.outputDir); err != nil {
+			return err
+		}
 	}
 	return nil
 }
