@@ -1300,16 +1300,18 @@ func (c *aksEngineDeployer) TestSetup() error {
 		if err != nil {
 			return fmt.Errorf("error unmarshaling ApiModel template file: %v", err)
 		}
+		log.Printf("aks enging api model: %v", v)
 	} else {
 		return fmt.Errorf("No template file specified %v", err)
 	}
 
 	if *disabledConformanceTest {
-		fmt.Println("Unsetting KUBERNETES_CONFORMANCE_TEST")
+		log.Println("Unsetting KUBERNETES_CONFORMANCE_TEST")
 		os.Unsetenv("KUBERNETES_CONFORMANCE_TEST")
 	}
 	if len(v.Properties.AgentPoolProfiles) > 0 {
 		// Default to VirtualMachineScaleSets if AvailabilityProfile is empty
+		log.Println("populating config file")
 		isVMSS := v.Properties.AgentPoolProfiles[0].AvailabilityProfile == "" || v.Properties.AgentPoolProfiles[0].AvailabilityProfile == availabilityProfileVMSS
 		if err := populateAzureCloudConfig(isVMSS, *c.credentials, c.azureEnvironment, c.resourceGroup, c.location, c.outputDir); err != nil {
 			return err
