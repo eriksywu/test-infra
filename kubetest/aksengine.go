@@ -1044,6 +1044,7 @@ func (c *aksEngineDeployer) Up() error {
 		if err != nil {
 			return fmt.Errorf("error downloading ApiModel template: %v with error %v", c.apiModelPath, err)
 		}
+		fmt.Printf("downloaded aks api model file to %s", templateFile)
 		c.apiModelPath = templateFile
 	}
 
