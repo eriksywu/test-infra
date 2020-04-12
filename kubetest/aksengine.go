@@ -101,6 +101,8 @@ var (
 	clusterLoader2BinURL       = flag.String("clusterloader2-bin-url", "", fmt.Sprintf("%s URL to the binary of clusterloader2", azureKubemarkTestPrefix))
 	kubemarkLocation           = flag.String("kubemark-location", "southcentralus", fmt.Sprintf("%s The location where the kubemark and external clusters run", azureKubemarkTestPrefix))
 	kubemarkSize               = flag.String("kubemark-size", "100", fmt.Sprintf("%s The number of hollow nodes in kubemark cluster", azureKubemarkTestPrefix))
+
+	disabledConformanceTest = flag.Bool("disable-conformance-test", false, "Set to True if you want to disable conformance tests")
 )
 
 const (
@@ -1299,7 +1301,11 @@ func (c *aksEngineDeployer) TestSetup() error {
 	} else {
 		return fmt.Errorf("No template file specified %v", err)
 	}
-
+	if *disabledConformanceTest {
+		if err := os.Unsetenv("KUBERNETES_CONFORMANCE_TEST"); err != nil {
+			return err
+		}
+	}
 	if len(v.Properties.AgentPoolProfiles) > 0 {
 		// Default to VirtualMachineScaleSets if AvailabilityProfile is empty
 		isVMSS := v.Properties.AgentPoolProfiles[0].AvailabilityProfile == "" || v.Properties.AgentPoolProfiles[0].AvailabilityProfile == availabilityProfileVMSS
