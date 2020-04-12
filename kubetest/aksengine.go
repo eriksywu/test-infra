@@ -412,8 +412,10 @@ func newAKSEngine() (*aksEngineDeployer, error) {
 	}
 	// like kops and gke set KUBERNETES_CONFORMANCE_TEST so the auth is picked up
 	// from kubectl instead of bash inference.
-	if err := os.Setenv("KUBERNETES_CONFORMANCE_TEST", "yes"); err != nil {
-		return nil, err
+	if *disabledConformanceTest == false {
+		if err := os.Setenv("KUBERNETES_CONFORMANCE_TEST", "yes"); err != nil {
+			return nil, err
+		}
 	}
 
 	if err := c.dockerLogin(); err != nil {
@@ -1301,10 +1303,10 @@ func (c *aksEngineDeployer) TestSetup() error {
 	} else {
 		return fmt.Errorf("No template file specified %v", err)
 	}
+
 	if *disabledConformanceTest {
-		if err := os.Unsetenv("KUBERNETES_CONFORMANCE_TEST"); err != nil {
-			return err
-		}
+		fmt.Println("Unsetting KUBERNETES_CONFORMANCE_TEST")
+		os.Unsetenv("KUBERNETES_CONFORMANCE_TEST")
 	}
 	if len(v.Properties.AgentPoolProfiles) > 0 {
 		// Default to VirtualMachineScaleSets if AvailabilityProfile is empty
