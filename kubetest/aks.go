@@ -296,6 +296,14 @@ func (a *aksDeployer) TestSetup() error {
 		return err
 	}
 
+	model, _ := a.getManagedClusterModel()
+
+	log.Printf("Populating Azure cloud config")
+	isVMSS := (*model.ManagedClusterProperties.AgentPoolProfiles)[0].Type == "" || (*model.ManagedClusterProperties.AgentPoolProfiles)[0].Type == availabilityProfileVMSS
+	if err := populateAzureCloudConfig(isVMSS, *a.azureCreds, a.azureEnvironment, a.resourceGroup, a.location, a.outputDir); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -406,4 +414,22 @@ func randString(length int) string {
 		b[i] = charset[mathrand.Intn(len(charset))]
 	}
 	return string(b)
+}
+
+func (a *aksDeployer) getManagedClusterModel() (containerservice.ManagedCluster, error) {
+	var model containerservice.ManagedCluster
+	templateFile, err := downloadFromURL(a.templateURL, path.Join(a.outputDir, "kubernetes.json"), 2)
+	if err != nil {
+		return model, fmt.Errorf("error downloading AKS cluster template: %v with error %v", a.templateURL, err)
+	}
+
+	template, err := ioutil.ReadFile(templateFile)
+	if err != nil {
+		return model, fmt.Errorf("failed to read downloaded cluster template file: %v", err)
+	}
+
+	if err := json.Unmarshal(template, &model); err != nil {
+		return model, fmt.Errorf("failed to unmarshal managedcluster model: %v", err)
+	}
+	return model, nil
 }
